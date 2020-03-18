@@ -36,6 +36,7 @@ import VisualObjectInstance = powerbi.VisualObjectInstance;
 import DataView = powerbi.DataView;
 import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnumerationObject;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
+import { EventEmitter } from "events";
 
 import { VisualSettings } from "./settings";
 export class Visual implements IVisual {
@@ -46,9 +47,16 @@ export class Visual implements IVisual {
     private textNodeRowCount: Text;
     private fetchMoreCounter: number;
     private visualHOst: IVisualHost;
+    private eventService: any;
+    private element: HTMLElement;
+    private visual: HTMLElement;
 
     constructor(options: VisualConstructorOptions) {
         console.log('Visual constructor', options);
+        this.element = options.element;
+        this.visual = document.createElement("div");
+        this.visual.classList.add("custom-visual");
+        this.eventService = new EventEmitter();
         this.visualHOst = options.host;
         this.target = options.element;
         this.fetchMoreCounter = 0;
@@ -70,29 +78,85 @@ export class Visual implements IVisual {
             new_p2.appendChild(new_em2);
             this.target.appendChild(new_p2);
         }
+        this.logger();
     }
 
     public update(options: VisualUpdateOptions) {
-        console.log("update Called", this.fetchMoreCounter);
-        this.settings = Visual.parseSettings(options && options.dataViews && options.dataViews[0]);
-        if (options.operationKind == 0 /* Create */) {
-            this.fetchMoreCounter = 0;
-        
-        } else if (options.operationKind == 1) {
-            this.fetchMoreCounter++;
-        }
-        // console.log("fetchMoreCounter", this.fetchMoreCounter);
-        if ( options.dataViews &&  options.dataViews[0] &&  options.dataViews[0].metadata.segment) {
-            this.visualHOst.fetchMoreData();
-            console.log("fetchmore Called", this.fetchMoreCounter);
-        }
-        console.log('Visual update', options);
-        if (this.textNode) {
-            this.textNode.textContent = (this.fetchMoreCounter).toString();
-        }
-        if (this.textNodeRowCount) {
-            this.textNodeRowCount.textContent = (options.dataViews[0].matrix.rows.root.children.length).toString();
-        }
+        console.log(`update Called ${this.fetchMoreCounter}`);
+        this.eventService.emit("log", `update Called ${this.fetchMoreCounter}`);
+
+        const { dataViews } = options;
+        // if ( options.type !== 4 && options.type !== 32 && options.type !== 8 && options.type !== 36 ) {
+            
+            this.settings = Visual.parseSettings(options && dataViews && dataViews[0]);
+            if (options.operationKind == 0 /* Create */) {
+                this.fetchMoreCounter = 0;
+                this.eventService.emit("clear-log");
+            
+            } else if (options.operationKind == 1) {
+                this.fetchMoreCounter++;
+            }
+            // console.log("fetchMoreCounter", this.fetchMoreCounter);
+            if ( dataViews &&  dataViews[0] &&  dataViews[0].metadata.segment) {
+                this.visualHOst.fetchMoreData();
+                console.log("fetchmore Called", this.fetchMoreCounter);
+                this.eventService.emit("log", `fetchmore Called ${this.fetchMoreCounter}`);
+
+            } 
+            this.eventService.emit("log", `viewMode ${options.viewMode}`);
+            this.eventService.emit("log", `editMode ${options.editMode}`);
+            this.eventService.emit("log", `isInFocus ${options.isInFocus}`);
+            this.eventService.emit("log", `operationKind ${options.operationKind}`);
+            this.eventService.emit("log", `type ${options.type}`);
+            
+            console.log('Visual update', options);
+            if (this.textNode) {
+                this.textNode.textContent = (this.fetchMoreCounter).toString();
+            }
+            if (this.textNodeRowCount) {
+                this.textNodeRowCount.textContent = (dataViews[0].matrix.rows.root.children.length).toString();
+            }       
+        // }
+    }
+
+    public logger() {
+        let requestLogger = document.createElement("div");
+    requestLogger.classList.add("request-logger");
+
+    let requestLoggerHeader = document.createElement("span");
+    requestLoggerHeader.classList.add("header");
+    requestLoggerHeader.appendChild(
+      document.createTextNode("Console Logger :")
+    );
+
+    let requestLoggerBody = document.createElement("span");
+    requestLoggerBody.classList.add("content");
+    this.eventService.addListener("clear-log", () => {
+      while (requestLoggerBody.firstChild)
+        requestLoggerBody.firstChild.remove();
+    });
+    this.eventService.addListener("log", data => {
+      requestLoggerBody.append(data);
+      requestLoggerBody.append(document.createElement("br"));
+    });
+
+    requestLogger.appendChild(requestLoggerHeader);
+    requestLogger.appendChild(requestLoggerBody);
+
+    /* let outputLoggerHeader = document.createElement("span");
+    outputLoggerHeader.classList.add("header");
+    outputLoggerHeader.appendChild(document.createTextNode("Output :"));
+
+    let outputLoggerBody = document.createElement("span");
+    outputLoggerBody.id = "output-content";
+    outputLoggerBody.classList.add("content");
+
+    requestLogger.appendChild(outputLoggerHeader);
+    requestLogger.appendChild(outputLoggerBody); */
+
+    this.visual.appendChild(requestLogger);
+
+    this.element.append(this.visual);
     }
 
     private static parseSettings(dataView: DataView): VisualSettings {

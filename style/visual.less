@@ -1,9 +1,41 @@
-p {
-    font-size: 20px;
-    font-weight: bold;
-    em {
-        background: yellow;
-        padding: 5px;
-        
+.custom-visual {
+    display: flex;
+    flex-direction: column;
+    height: 99vh;
+
+    .request-logger,.request-triggerer {
+        margin: 0 10px;
+    }
+
+    .request-logger {
+        .header {
+            display: flex;
+        }
+    
+        .content {
+            display: flex;
+            border: 1px solid #000;
+            height: 80vh;
+            overflow: auto;
+            padding: 0 10px;
+        }
+    }
+
+    .request-triggerer {
+        input[type="text"] {
+            border: 1px solid;
+            height: 4vh;
+            width: 50%;
+            margin: 20px 0;
+            padding: 0 10px;
+        }
+
+        button {
+            margin: 0 10px;
+            width: 80px;
+            height: 4.5vh;
+            border: 0;
+            background: #f2c811;
+        }
     }
 }
