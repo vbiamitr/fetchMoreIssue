@@ -1,0 +1,121 @@
+{
+    "dataRoles": [       
+        {
+            "displayName": "Value",
+            "name": "measure",
+            "kind": "Measure",
+            "description": "Assign what you would like to measure & simulate  (e.g. most recent Forecast), followed by your benchmark (e.g. Budget)",
+            "requiredTypes": [
+                {
+                    "integer": true
+                },
+                {
+                    "numeric": true
+                }
+            ]
+        },
+        {
+            "displayName": "Category",
+            "name": "rows",
+            "kind": "Grouping",
+            "description": "Assign one or more categories. For simple dynamic trees, you would typically assign your dimensions / text columns (e.g Region, Product Category, Sales Rep). "
+        },
+        {
+            "displayName": "Time Period",
+            "name": "columns",
+            "kind": "Grouping",
+            "description": "Assign your time periods to this field here (e.g. Quarter, Month)"
+        }        
+        
+    ],
+    "objects": {
+        "dataPoint": {
+            "displayName": "Data colors",
+            "properties": {
+                "defaultColor": {
+                    "displayName": "Default color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "showAllDataPoints": {
+                    "displayName": "Show all",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "fill": {
+                    "displayName": "Fill",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "fillRule": {
+                    "displayName": "Color saturation",
+                    "type": {
+                        "fill": {}
+                    }
+                },
+                 "fontSize": {
+                    "displayName": "Text Size",
+                    "type": {
+                        "formatting": {
+                            "fontSize": true
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "dataViewMappings": [
+        {
+            "conditions": [
+                {
+                    "measure": {
+                        "min": 1
+                    }
+                }
+                
+            ],
+            "matrix": {
+                "rows": {
+                    "for": {
+                        "in": "rows"
+                    },
+                    "dataReductionAlgorithm": {
+                        "window": {
+                            "count": 1250
+                        }
+                    }
+                },
+                "columns": {
+                    "for": {
+                        "in": "columns"
+                    },
+                    "dataReductionAlgorithm": {
+                        "top": {
+                            "count": 24
+                        }
+                    }
+                },
+                "values": {
+                    "select": [
+                        {
+                            "for": {
+                                "in": "measure"
+                            }
+                        }                        
+                    ]
+                }
+            }
+        }
+    ]
+}
