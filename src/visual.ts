@@ -83,31 +83,30 @@ export class Visual implements IVisual {
 
     public update(options: VisualUpdateOptions) {
         console.log(`update Called ${this.fetchMoreCounter}`);
-        this.eventService.emit("log", `update Called ${this.fetchMoreCounter}`);
+        const consoleMessages = [];
+        consoleMessages.push(`update Called ${this.fetchMoreCounter}`);
 
         const { dataViews } = options;
-        // if ( options.type !== 4 && options.type !== 32 && options.type !== 8 && options.type !== 36 ) {
             
             this.settings = Visual.parseSettings(options && dataViews && dataViews[0]);
             if (options.operationKind == 0 /* Create */) {
-                this.fetchMoreCounter = 0;
+                this.fetchMoreCounter = 1;
                 this.eventService.emit("clear-log");
             
             } else if (options.operationKind == 1) {
                 this.fetchMoreCounter++;
             }
-            // console.log("fetchMoreCounter", this.fetchMoreCounter);
             if ( dataViews &&  dataViews[0] &&  dataViews[0].metadata.segment) {
                 this.visualHOst.fetchMoreData();
                 console.log("fetchmore Called", this.fetchMoreCounter);
-                this.eventService.emit("log", `fetchmore Called ${this.fetchMoreCounter}`);
-
+                consoleMessages.push(`fetchmore Called ${this.fetchMoreCounter}`);
             } 
-            this.eventService.emit("log", `viewMode ${options.viewMode}`);
-            this.eventService.emit("log", `editMode ${options.editMode}`);
-            this.eventService.emit("log", `isInFocus ${options.isInFocus}`);
-            this.eventService.emit("log", `operationKind ${options.operationKind}`);
-            this.eventService.emit("log", `type ${options.type}`);
+
+            consoleMessages.push(`viewMode ${options.viewMode}`);
+            consoleMessages.push(`editMode ${options.editMode}`);
+            consoleMessages.push(`isInFocus ${options.isInFocus}`);
+            consoleMessages.push(`operationKind ${options.operationKind}`);
+            consoleMessages.push(`type ${options.type}`);
             
             console.log('Visual update', options);
             if (this.textNode) {
@@ -116,6 +115,8 @@ export class Visual implements IVisual {
             if (this.textNodeRowCount) {
                 this.textNodeRowCount.textContent = (dataViews[0].matrix.rows.root.children.length).toString();
             }       
+            this.eventService.emit("log", consoleMessages);
+            debugger;
         // }
     }
 
@@ -136,23 +137,17 @@ export class Visual implements IVisual {
         requestLoggerBody.firstChild.remove();
     });
     this.eventService.addListener("log", data => {
-      requestLoggerBody.append(data);
-      requestLoggerBody.append(document.createElement("br"));
+        var div = document.createElement('div');
+        div.classList.add('single-update');
+        data.forEach(message => {
+            div.append((message));
+            div.append(document.createElement("br"));
+        });
+      requestLoggerBody.append(div);
     });
 
     requestLogger.appendChild(requestLoggerHeader);
     requestLogger.appendChild(requestLoggerBody);
-
-    /* let outputLoggerHeader = document.createElement("span");
-    outputLoggerHeader.classList.add("header");
-    outputLoggerHeader.appendChild(document.createTextNode("Output :"));
-
-    let outputLoggerBody = document.createElement("span");
-    outputLoggerBody.id = "output-content";
-    outputLoggerBody.classList.add("content");
-
-    requestLogger.appendChild(outputLoggerHeader);
-    requestLogger.appendChild(outputLoggerBody); */
 
     this.visual.appendChild(requestLogger);
 
