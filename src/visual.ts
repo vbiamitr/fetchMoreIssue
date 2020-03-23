@@ -46,7 +46,7 @@ export class Visual implements IVisual {
     private textNode: Text;
     private textNodeRowCount: Text;
     private fetchMoreCounter: number;
-    private visualHOst: IVisualHost;
+    private visualHost: IVisualHost;
     private eventService: any;
     private element: HTMLElement;
     private visual: HTMLElement;
@@ -57,23 +57,23 @@ export class Visual implements IVisual {
         this.visual = document.createElement("div");
         this.visual.classList.add("custom-visual");
         this.eventService = new EventEmitter();
-        this.visualHOst = options.host;
+        this.visualHost = options.host;
         this.target = options.element;
         this.fetchMoreCounter = 0;
         this.updateCount = 0;
         if (document) {
             const new_p: HTMLElement = document.createElement("p");
-            new_p.appendChild(document.createTextNode("Update count:"));
-            const new_em: HTMLElement = document.createElement("em");
+            new_p.appendChild(document.createTextNode("Update Count: "));
+            const new_em: HTMLElement = document.createElement("span");
             this.textNode = document.createTextNode(this.updateCount.toString());
             new_em.appendChild(this.textNode);
             new_p.appendChild(new_em);
             this.target.appendChild(new_p);
 
             const new_p2: HTMLElement = document.createElement("p");
-            new_p2.appendChild(document.createTextNode("Row count:"));
-            const new_em2: HTMLElement = document.createElement("em");
-            this.textNodeRowCount = document.createTextNode("0");
+            new_p2.appendChild(document.createTextNode("Details:"));
+            const new_em2: HTMLElement = document.createElement("b");
+            this.textNodeRowCount = document.createTextNode("");
             new_em2.appendChild(this.textNodeRowCount);
             new_p2.appendChild(new_em2);
             this.target.appendChild(new_p2);
@@ -82,76 +82,91 @@ export class Visual implements IVisual {
     }
 
     public update(options: VisualUpdateOptions) {
-        console.log(`update Called ${this.fetchMoreCounter}`);
         const consoleMessages = [];
-        consoleMessages.push(`update Called ${this.fetchMoreCounter}`);
+        consoleMessages.push(`update Called: ${this.fetchMoreCounter}`);
 
         const { dataViews } = options;
             
-            this.settings = Visual.parseSettings(options && dataViews && dataViews[0]);
-            if (options.operationKind == 0 /* Create */) {
-                this.fetchMoreCounter = 1;
-                this.eventService.emit("clear-log");
-            
-            } else if (options.operationKind == 1) {
-                this.fetchMoreCounter++;
-            }
-            if ( dataViews &&  dataViews[0] &&  dataViews[0].metadata.segment) {
-                this.visualHOst.fetchMoreData();
-                console.log("fetchmore Called", this.fetchMoreCounter);
-                consoleMessages.push(`fetchmore Called ${this.fetchMoreCounter}`);
-            } 
+        this.settings = Visual.parseSettings(options && dataViews && dataViews[0]);
+        if (options.operationKind == powerbi.VisualDataChangeOperationKind.Create) {
+            this.fetchMoreCounter = 1;        
+        } else if (options.operationKind == powerbi.VisualDataChangeOperationKind.Append) {
+            this.fetchMoreCounter++;
+        }
+        
+        if ( dataViews &&  dataViews[0] &&  dataViews[0].metadata.segment) {
+            const fetchMoreRes = this.visualHost.fetchMoreData();
+            consoleMessages.push(`fetchmore Called: ${this.fetchMoreCounter}`);
+            consoleMessages.push(`fetchmore status: ${fetchMoreRes}`);
+        } else {
+            consoleMessages.push(`fetchmore Called: --`);
+            consoleMessages.push(`fetchmore status: --`);
+        }
 
-            consoleMessages.push(`viewMode ${options.viewMode}`);
-            consoleMessages.push(`editMode ${options.editMode}`);
-            consoleMessages.push(`isInFocus ${options.isInFocus}`);
-            consoleMessages.push(`operationKind ${options.operationKind}`);
-            consoleMessages.push(`type ${options.type}`);
-            
-            console.log('Visual update', options);
-            if (this.textNode) {
-                this.textNode.textContent = (this.fetchMoreCounter).toString();
+        consoleMessages.push(`viewMode: ${options.viewMode}`);
+        consoleMessages.push(`editMode: ${options.editMode}`);
+        consoleMessages.push(`isInFocus: ${options.isInFocus}`);
+        consoleMessages.push(`operationKind: ${options.operationKind}`);
+        consoleMessages.push(`type: ${options.type}`);
+        consoleMessages.push(`timestamp: ${(new Date()).toISOString()}`);
+        
+        if (this.textNode) {
+            this.textNode.textContent = (this.fetchMoreCounter).toString();
+        }
+        if (this.textNodeRowCount) {
+            const measures = dataViews[0].matrix.valueSources.length;
+            const rowCount = this.getMemberCount(dataViews[0].matrix.rows.root);
+            const columnCount = this.getMemberCount(dataViews[0].matrix.columns.root)/measures;
+            this.textNodeRowCount.textContent = ` Row Count: ${rowCount.toLocaleString()} :: Column Count: ${columnCount.toLocaleString()} :: Measures: ${measures.toLocaleString()}`;
+        }       
+        this.addLog(consoleMessages);
+    }
+
+    public clearLogHandler = () => {
+        const logContent = document.querySelector(".content");
+        if(logContent) {
+            while (logContent.firstChild) {
+                logContent.firstChild.remove();
             }
-            if (this.textNodeRowCount) {
-                this.textNodeRowCount.textContent = (dataViews[0].matrix.rows.root.children.length).toString();
-            }       
-            this.eventService.emit("log", consoleMessages);
-            debugger;
-        // }
+        }
+    }
+
+    public addLog(data: string []) {
+        const logContent = document.querySelector(".content");
+        var div = document.createElement('div');
+        div.classList.add('single-update');
+        const docFragment = new DocumentFragment();
+        data.forEach((message: string) => {
+            const logNode = document.createElement("span");
+            logNode.textContent = message; 
+            docFragment.appendChild(logNode);
+            docFragment.appendChild(document.createElement("br"));
+        });
+        div.appendChild(docFragment);
+        logContent.append(div);
     }
 
     public logger() {
-        let requestLogger = document.createElement("div");
-    requestLogger.classList.add("request-logger");
+        let requestLogger = document.createElement("fieldset");
+        requestLogger.classList.add("request-logger");
 
-    let requestLoggerHeader = document.createElement("span");
-    requestLoggerHeader.classList.add("header");
-    requestLoggerHeader.appendChild(
-      document.createTextNode("Console Logger :")
-    );
+        let loggerTitle = document.createElement("legend");
+        loggerTitle.classList.add("header");
+        loggerTitle.innerText = "Console Logger";
+        requestLogger.appendChild(loggerTitle);
 
-    let requestLoggerBody = document.createElement("span");
-    requestLoggerBody.classList.add("content");
-    this.eventService.addListener("clear-log", () => {
-      while (requestLoggerBody.firstChild)
-        requestLoggerBody.firstChild.remove();
-    });
-    this.eventService.addListener("log", data => {
-        var div = document.createElement('div');
-        div.classList.add('single-update');
-        data.forEach(message => {
-            div.append((message));
-            div.append(document.createElement("br"));
-        });
-      requestLoggerBody.append(div);
-    });
+        let clearLogBtn = document.createElement("button");
+        clearLogBtn.classList.add("clear-log");
+        clearLogBtn.innerText = "Clear Logs";
+        loggerTitle.appendChild(clearLogBtn);
+        clearLogBtn.addEventListener("click", this.clearLogHandler);
 
-    requestLogger.appendChild(requestLoggerHeader);
-    requestLogger.appendChild(requestLoggerBody);
+        let requestLoggerBody = document.createElement("div");
+        requestLoggerBody.classList.add("content");
+        requestLogger.appendChild(requestLoggerBody);
 
-    this.visual.appendChild(requestLogger);
-
-    this.element.append(this.visual);
+        this.visual.appendChild(requestLogger);
+        this.element.append(this.visual);
     }
 
     private static parseSettings(dataView: DataView): VisualSettings {
@@ -166,4 +181,17 @@ export class Visual implements IVisual {
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
         return VisualSettings.enumerateObjectInstances(this.settings || VisualSettings.getDefault(), options);
     }
-}
+
+    private getMemberCount(root: powerbi.DataViewMatrixNode): number {
+        let memberCount = 0;
+        const parseDimension = (root: powerbi.DataViewMatrixNode) => {
+            if(root.children) {
+                root.children.forEach(parseDimension);
+            } else {
+                memberCount+=1;
+            }
+        }
+        parseDimension(root);
+        return memberCount;
+    }
+ }
