@@ -117,7 +117,7 @@ export class Visual implements IVisual {
             const measures = dataViews[0].matrix.valueSources.length;
             const rowCount = this.getMemberCount(dataViews[0].matrix.rows.root);
             const columnCount = this.getMemberCount(dataViews[0].matrix.columns.root)/measures;
-            this.textNodeRowCount.textContent = ` Row Count: ${rowCount.toLocaleString()} :: Column Count: ${columnCount.toLocaleString()} :: Measures: ${measures.toLocaleString()}`;
+            this.textNodeRowCount.textContent = `Total Rows Loaded: ${(rowCount * columnCount).toLocaleString()} :: Row Count: ${rowCount.toLocaleString()} :: Column Count: ${columnCount.toLocaleString()} :: Measures: ${measures.toLocaleString()}`;
         }       
         this.addLog(consoleMessages);
     }
@@ -135,14 +135,12 @@ export class Visual implements IVisual {
         const logContent = document.querySelector(".content");
         var div = document.createElement('div');
         div.classList.add('single-update');
-        const docFragment = new DocumentFragment();
         data.forEach((message: string) => {
             const logNode = document.createElement("span");
             logNode.textContent = message; 
-            docFragment.appendChild(logNode);
-            docFragment.appendChild(document.createElement("br"));
+            div.appendChild(logNode);
+            div.appendChild(document.createElement("br"));
         });
-        div.appendChild(docFragment);
         logContent.append(div);
     }
 
