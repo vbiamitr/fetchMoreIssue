@@ -2,6 +2,29 @@ body {
     cursor: auto !important;
 }
 
+.tbl-wrapper {
+    position: absolute;
+    top: 100px;
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
+    border: 1px solid #333;
+    overflow: scroll;
+}
+
+.data-tbl {
+    border-collapse: collapse;
+    display: flex;
+    flex-wrap: nowrap;
+    height: 40px;
+    border-bottom: 1px solid #333;
+    .cell {
+        padding: 5px 10px;
+        width: 11vw;
+        border-right: 1px solid #333;
+    }
+}
+
 .custom-visual {
     display: flex;
     flex-direction: column;
